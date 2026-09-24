@@ -1,0 +1,1084 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bioinformatics Research Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="header-content">
+        <div class="header-brand">
+          <span class="header-logo-icon">🧬</span>
+          <h1>Bioinformatics Research Dashboard</h1>
+        </div>
+        <div class="header-actions">
+          <button
+            type="button"
+            id="header-sidebar-toggle"
+            class="header-sidebar-icon-btn"
+            title="Open Route Guide & Prompt Library"
+            aria-label="Open sidebar"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="15" y1="3" x2="15" y2="21"></line>
+              <path d="M10 9l3 3-3 3"></path>
+            </svg>
+            <span class="header-btn-label">Route Guide & Prompts</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard-container">
+      <!-- Configuration Panel -->
+      <section class="panel config-panel">
+        <h2>Analysis Configuration</h2>
+
+        <div class="form-group">
+          <label for="dataset">Target Dataset</label>
+          <select id="dataset" disabled>
+            <option value="GSE68086">GSE68086 (Blood Platelets RNA-Seq)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Comparison Groups</label>
+          <div class="group-selectors">
+            <select id="group-a" disabled aria-label="Comparison Group A">
+              <option>Loading...</option>
+            </select>
+            <span class="vs">vs</span>
+            <select id="group-b" disabled aria-label="Comparison Group B">
+              <option>Loading...</option>
+            </select>
+          </div>
+          <div id="group-validation-msg" class="field-validation-msg" style="display: none;"></div>
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="question" style="margin-bottom: 0;">Research Question (Hypothesis)</label>
+            <span id="char-counter" class="char-counter">0 / 2,000</span>
+          </div>
+          <textarea
+            id="question"
+            disabled
+            maxlength="2000"
+            placeholder="e.g., What are the key transcriptomic differences and affected pathways between Healthy controls and Breast cancer patients?"
+          ></textarea>
+          <div id="question-validation-msg" class="field-validation-msg" style="display: none;"></div>
+        </div>
+
+        <div id="form-general-error" class="form-general-alert" style="display: none;"></div>
+
+        <button id="run-btn" class="primary-btn" disabled>
+          Run Analysis Pipeline
+        </button>
+
+        <!-- Prompts & Route Guide Drawer Trigger Button (Clean left section) -->
+        <!-- <div class="prompt-library-trigger-box">
+                <button type="button" id="open-sidebar-btn" class="sidebar-trigger-btn">
+                    <span class="trigger-icon">💡</span>
+                    <div class="trigger-text-group">
+                        <span class="trigger-title">Prompt Library & Route Guide</span>
+                        <span class="trigger-sub">5 MCP Routes &bull; Descriptions &bull; 15 Prompts</span>
+                    </div>
+                    <span class="trigger-arrow">&rarr;</span>
+                </button>
+            </div> -->
+      </section>
+
+      <!-- Results Panel -->
+      <section class="panel results-panel" id="results-panel">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+          "
+        >
+          <h2 style="border: none; margin: 0; padding: 0">Analysis Results</h2>
+          <span id="job-status-badge" class="badge">Idle</span>
+        </div>
+
+        <!-- Segregated Decision Checkpoint (Action Required) -->
+        <div
+          id="decision-gate-container"
+          class="checkpoint-gate-wrapper"
+          style="display: none"
+        ></div>
+
+        <!-- Unified Pipeline Execution & Live Workflow Trace Card -->
+        <div
+          class="result-section unified-pipeline-card"
+          id="workflow-progress-section"
+          style="display: none"
+        >
+          <div class="pipeline-card-header">
+            <div>
+              <h3 class="pipeline-card-title">
+                Execution Flow & Dynamic Architecture Graph
+              </h3>
+              <p
+                style="
+                  margin: 2px 0 0 0;
+                  font-size: 0.775rem;
+                  color: var(--text-secondary);
+                "
+              >
+                Real-time tracking of autonomous agent modules, AI dynamic
+                routing decisions, and specialized MCP execution
+              </p>
+            </div>
+            <div
+              id="graph-route-status"
+              style="font-size: 0.825rem; font-weight: 700; color: #0284c7"
+            >
+              Pipeline Ready
+            </div>
+          </div>
+
+          <div class="graph-canvas-container">
+            <svg
+              id="architecture-graph-svg"
+              viewBox="0 0 1100 625"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <!-- Default slate arrow marker -->
+                <marker
+                  id="slate-arrow"
+                  viewBox="0 0 10 10"
+                  refX="6"
+                  refY="5"
+                  markerWidth="6"
+                  markerHeight="6"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#94a3b8" />
+                </marker>
+                <!-- Highlighted cyan arrow marker -->
+                <marker
+                  id="highlight-arrow"
+                  viewBox="0 0 10 10"
+                  refX="6"
+                  refY="5"
+                  markerWidth="7"
+                  markerHeight="7"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#0284c7" />
+                </marker>
+                <!-- Highlighted red arrow marker -->
+                <marker
+                  id="red-arrow"
+                  viewBox="0 0 10 10"
+                  refX="6"
+                  refY="5"
+                  markerWidth="7"
+                  markerHeight="7"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#ef4444" />
+                </marker>
+              </defs>
+
+              <!-- Top Node: Dataset & Analysis MCP -->
+              <g id="g-node-dataset" class="graph-node">
+                <rect
+                  x="435"
+                  y="20"
+                  width="230"
+                  height="42"
+                  rx="6"
+                  class="node-box"
+                />
+                <text x="550" y="42" class="node-label">
+                  Dataset & Analysis MCP
+                </text>
+              </g>
+
+              <!-- Line 1: Dataset -> Genes -->
+              <path
+                id="path-dataset-genes"
+                d="M 550 62 L 550 104"
+                class="graph-connector"
+                marker-end="url(#slate-arrow)"
+              />
+
+              <!-- Node 2: Top Differential Genes -->
+              <g id="g-node-genes" class="graph-node">
+                <rect
+                  x="445"
+                  y="106"
+                  width="210"
+                  height="42"
+                  rx="6"
+                  class="node-box"
+                />
+                <text x="550" y="128" class="node-label">
+                  Top Differential Genes
+                </text>
+              </g>
+
+              <!-- Line 2: Genes -> Router Diamond -->
+              <path
+                id="path-genes-router"
+                d="M 550 148 L 550 186"
+                class="graph-connector"
+                marker-end="url(#slate-arrow)"
+              />
+
+              <!-- Node 3: AI Dynamic Router Agent (Diamond) -->
+              <g id="g-node-router" class="graph-node">
+                <polygon
+                  points="550,188 650,250 550,312 450,250"
+                  class="diamond-box"
+                />
+                <text x="550" y="252" class="diamond-label">
+                  AI Dynamic Router Agent
+                </text>
+              </g>
+
+              <!-- Branch 1: Drug Interaction MCP -->
+              <path
+                id="path-branch-1-top"
+                d="M 475 265 L 115 265 L 115 362"
+                class="graph-connector branch-1-el"
+              />
+              <g id="g-cond-1" class="condition-box-group branch-1-el">
+                <rect
+                  x="35"
+                  y="364"
+                  width="160"
+                  height="30"
+                  rx="6"
+                  class="condition-rect"
+                />
+                <text x="115" y="380" class="condition-text">
+                  Drug / Therapy Question
+                </text>
+              </g>
+              <path
+                id="path-cond-mcp-1"
+                d="M 115 394 L 115 430"
+                class="graph-connector branch-1-el"
+                marker-end="url(#slate-arrow)"
+              />
+              <g id="g-mcp-1" class="graph-node mcp-node branch-1-el">
+                <rect
+                  x="30"
+                  y="432"
+                  width="170"
+                  height="42"
+                  rx="6"
+                  class="node-box"
+                />
+                <text x="115" y="454" class="node-label">
+                  Drug Interaction MCP
+                </text>
+              </g>
+              <path
+                id="path-mcp-bus-1"
+                d="M 115 474 L 115 512"
+                class="graph-connector branch-1-el"
+              />
+
+              <!-- Branch 2: STRING Network MCP -->
+              <path
+                id="path-branch-2-top"
+                d="M 512 288 L 330 288 L 330 362"
+                class="graph-connector branch-2-el"
+              />
+              <g id="g-cond-2" class="condition-box-group branch-2-el">
+                <rect
+                  x="235"
+                  y="364"
+                  width="190"
+                  height="30"
+                  rx="6"
+                  class="condition-rect"
+                />
+                <text x="330" y="380" class="condition-text">
+                  Network / Hub Driver Question
+                </text>
+              </g>
+              <path
+                id="path-cond-mcp-2"
+                d="M 330 394 L 330 430"
+                class="graph-connector branch-2-el"
+                marker-end="url(#slate-arrow)"
+              />
+              <g id="g-mcp-2" class="graph-node mcp-node branch-2-el">
+                <rect
+                  x="235"
+                  y="432"
+                  width="190"
+                  height="42"
+                  rx="6"
+                  class="node-box"
+                />
+                <text x="330" y="454" class="node-label">
+                  STRING Network MCP
+                </text>
+              </g>
+              <path
+                id="path-mcp-bus-2"
+                d="M 330 474 L 330 512"
+                class="graph-connector branch-2-el"
+              />
+
+              <!-- Branch 3: Gene Ontology Secretion MCP (Center) -->
+              <path
+                id="path-branch-3-top"
+                d="M 550 312 L 550 362"
+                class="graph-connector branch-3-el"
+              />
+              <g id="g-cond-3" class="condition-box-group branch-3-el">
+                <rect
+                  x="445"
+                  y="364"
+                  width="210"
+                  height="30"
+                  rx="6"
+                  class="condition-rect"
+                />
+                <text x="550" y="380" class="condition-text">
+                  Liquid Biopsy / Diagnostic Question
+                </text>
+              </g>
+              <path
+                id="path-cond-mcp-3"
+                d="M 550 394 L 550 430"
+                class="graph-connector branch-3-el"
+                marker-end="url(#slate-arrow)"
+              />
+              <g id="g-mcp-3" class="graph-node mcp-node branch-3-el">
+                <rect
+                  x="445"
+                  y="432"
+                  width="210"
+                  height="42"
+                  rx="6"
+                  class="node-box"
+                />
+                <text x="550" y="454" class="node-label">
+                  Gene Ontology Secretion MCP
+                </text>
+              </g>
+              <path
+                id="path-mcp-bus-3"
+                d="M 550 474 L 550 512"
+                class="graph-connector branch-3-el"
+              />
+
+              <!-- Branch 4: Clinical Survival MCP -->
+              <path
+                id="path-branch-4-top"
+                d="M 588 288 L 770 288 L 770 362"
+                class="graph-connector branch-4-el"
+              />
+              <g id="g-cond-4" class="condition-box-group branch-4-el">
+                <rect
+                  x="680"
+                  y="364"
+                  width="180"
+                  height="30"
+                  rx="6"
+                  class="condition-rect"
+                />
+                <text x="770" y="380" class="condition-text">
+                  Survival / Prognosis Question
+                </text>
+              </g>
+              <path
+                id="path-cond-mcp-4"
+                d="M 770 394 L 770 430"
+                class="graph-connector branch-4-el"
+                marker-end="url(#slate-arrow)"
+              />
+              <g id="g-mcp-4" class="graph-node mcp-node branch-4-el">
+                <rect
+                  x="680"
+                  y="432"
+                  width="180"
+                  height="42"
+                  rx="6"
+                  class="node-box"
+                />
+                <text x="770" y="454" class="node-label">
+                  Clinical Survival MCP
+                </text>
+              </g>
+              <path
+                id="path-mcp-bus-4"
+                d="M 770 474 L 770 512"
+                class="graph-connector branch-4-el"
+              />
+
+              <!-- Branch 5: Reactome & PubMed MCP -->
+              <path
+                id="path-branch-5-top"
+                d="M 625 265 L 985 265 L 985 362"
+                class="graph-connector branch-5-el"
+              />
+              <g id="g-cond-5" class="condition-box-group branch-5-el">
+                <rect
+                  x="885"
+                  y="364"
+                  width="200"
+                  height="30"
+                  rx="6"
+                  class="condition-rect"
+                />
+                <text x="985" y="380" class="condition-text">
+                  Standard Pathway / Novelty Check
+                </text>
+              </g>
+              <path
+                id="path-cond-mcp-5"
+                d="M 985 394 L 985 430"
+                class="graph-connector branch-5-el"
+                marker-end="url(#slate-arrow)"
+              />
+              <g id="g-mcp-5" class="graph-node mcp-node branch-5-el">
+                <rect
+                  x="885"
+                  y="432"
+                  width="200"
+                  height="42"
+                  rx="6"
+                  class="node-box"
+                />
+                <text x="985" y="454" class="node-label">
+                  Reactome & PubMed MCP
+                </text>
+              </g>
+              <path
+                id="path-mcp-bus-5"
+                d="M 985 474 L 985 512"
+                class="graph-connector branch-5-el"
+              />
+
+              <!-- Convergence Bus Line -->
+              <path
+                id="path-bus-line"
+                d="M 115 512 L 985 512"
+                class="graph-connector"
+              />
+
+              <!-- Connector into Synthesis Box -->
+              <path
+                id="path-bus-synthesis"
+                d="M 550 512 L 550 550"
+                class="graph-connector"
+                marker-end="url(#slate-arrow)"
+              />
+
+              <!-- Final Node: Synthesize Custom Scientific Report -->
+              <g id="g-node-synthesis" class="graph-node">
+                <rect
+                  x="415"
+                  y="554"
+                  width="270"
+                  height="44"
+                  rx="6"
+                  class="node-box"
+                />
+                <text x="550" y="577" class="node-label">
+                  Synthesize Custom Scientific Report
+                </text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Grouped Live Workflow Trace Audit Log Subpanel -->
+          <div class="workflow-trace-subpanel">
+            <div class="trace-subpanel-header">
+              <div class="trace-header-left">
+                <span class="trace-live-badge">
+                  <span class="trace-live-dot"></span>
+                  LIVE AUDIT TRACE
+                </span>
+                <span class="trace-subtitle">Autonomous agent activity, checkpoints, &amp; routing execution logs</span>
+              </div>
+              <div class="trace-header-right">
+                <span id="trace-step-counter" class="trace-counter-badge">0 steps logged</span>
+              </div>
+            </div>
+            <ul id="workflow-logs" class="log-list">
+              <li class="log-info">[System] Pipeline ready. Waiting for task execution...</li>
+            </ul>
+          </div>
+        </div>
+
+        <div id="results-content" class="results-content">
+          <div class="empty-state">
+            Configure and run an analysis to see results here.
+          </div>
+        </div>
+
+        <!-- Hidden templates for data rendering -->
+        <div id="data-container" style="display: none">
+
+          <div class="result-section">
+            <h3>Top Significant Genes (FDR < 0.05)</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Gene ID</th>
+                    <th>Group A Mean</th>
+                    <th>Group B Mean</th>
+                    <th>Log2 Fold Change</th>
+                    <th>Adjusted P-Value (FDR)</th>
+                  </tr>
+                </thead>
+                <tbody id="genes-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="result-section">
+            <h3>Overrepresented Reactome Pathways</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Pathway ID</th>
+                    <th>Name</th>
+                    <th>Entities Found</th>
+                    <th>FDR</th>
+                  </tr>
+                </thead>
+                <tbody id="pathways-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="result-section" id="literature-section">
+            <h3>Biomarker Literature Grounding (PubMed / Europe PMC)</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Gene ID</th>
+                    <th>Symbol</th>
+                    <th>Validation Status</th>
+                    <th>Literature Hits</th>
+                    <th>Key Citation</th>
+                  </tr>
+                </thead>
+                <tbody id="literature-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="result-section">
+            <h3>Scientific Report</h3>
+            <div id="report-content" class="report-content"></div>
+            <button
+              id="download-report-btn"
+              class="primary-btn"
+              style="margin-top: 16px; max-width: 250px"
+            >
+              Download Report as PDF
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Sidebar Backdrop Overlay -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
+    <!-- Expandable Right Sidebar Drawer: Route Descriptions & 15 Prompts -->
+    <aside
+      id="routes-sidebar"
+      class="routes-sidebar"
+      aria-label="Route Guide and Prompt Library"
+    >
+      <div class="sidebar-header">
+        <div class="sidebar-title-wrap">
+          <div class="sidebar-icon">🧬</div>
+          <div>
+            <h2>MCP Route Guide & Prompt Library</h2>
+            <p class="sidebar-subtitle">
+              Explore 5 specialized agent routes, question types, algorithms,
+              and 15 interactive templates
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="close-sidebar-btn"
+          class="close-sidebar-btn"
+          aria-label="Close sidebar"
+        >
+          &times;
+        </button>
+      </div>
+
+      <div class="sidebar-content">
+        <!-- 1. Drug / Therapy Route -->
+        <div class="route-card-full" data-route="drug_interaction">
+          <div class="route-card-header">
+            <span class="route-tag drug-tag"
+              >Route 1 &bull; Drug Interaction MCP</span
+            >
+            <span class="route-badge">Targeted Therapies</span>
+          </div>
+          <div class="route-desc-box">
+            <div class="desc-item">
+              <span class="desc-label">🎯 Question Scope (Q/A Intent):</span>
+              <p class="desc-text">
+                Targetable kinase receptors, small molecule inhibitors,
+                FDA-approved antineoplastics, compound repurposing, and
+                pharmacogenomic targeting for differential biomarkers.
+              </p>
+            </div>
+            <div class="desc-item">
+              <span class="desc-label">⚙️ What the Agent Does:</span>
+              <p class="desc-text">
+                Cross-references top upregulated genes against DGIdb and ChEMBL
+                databases, evaluates drug-gene binding mechanisms, and scores
+                actionable therapeutic targets.
+              </p>
+            </div>
+          </div>
+          <div class="route-examples-list">
+            <span class="examples-header-label"
+              >Hypothesis Templates (Click to apply):</span
+            >
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Which top overexpressed genes in Breast cancer represent
+                targetable drug receptors or have existing FDA-approved
+                inhibitors?
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Identify candidate therapeutic targets and small molecule drug
+                interactions for upregulated genes in Colorectal tumors.
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Are there any repurposable antineoplastic drugs or kinase
+                inhibitors targeting the leading biomarkers in Glioblastoma?
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Network / Hub Driver Route -->
+        <div class="route-card-full" data-route="string_network">
+          <div class="route-card-header">
+            <span class="route-tag network-tag"
+              >Route 2 &bull; STRING Network MCP</span
+            >
+            <span class="route-badge">Interactome Topology</span>
+          </div>
+          <div class="route-desc-box">
+            <div class="desc-item">
+              <span class="desc-label">🎯 Question Scope (Q/A Intent):</span>
+              <p class="desc-text">
+                Protein-protein interaction (PPI) networks, interactome degree
+                centrality, hub driver genes, master regulator bottleneck
+                proteins, and module connectivity.
+              </p>
+            </div>
+            <div class="desc-item">
+              <span class="desc-label">⚙️ What the Agent Does:</span>
+              <p class="desc-text">
+                Queries STRING-DB v12 REST API, constructs a confidence-scored
+                interactome graph (score &ge; 0.7), and computes node degree
+                rankings to isolate master regulatory hubs.
+              </p>
+            </div>
+          </div>
+          <div class="route-examples-list">
+            <span class="examples-header-label"
+              >Hypothesis Templates (Click to apply):</span
+            >
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                What are the key hub driver genes and protein-protein
+                interaction network topology connecting the top biomarkers?
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Map the protein interactome and identify central hub nodes with
+                highest degree centrality among significant genes.
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Construct a STRING PPI network to reveal core functional modules
+                and master regulator bottleneck proteins in Lung cancer.
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Liquid Biopsy / Diagnostic Route -->
+        <div class="route-card-full" data-route="secretion_go">
+          <div class="route-card-header">
+            <span class="route-tag secretion-tag"
+              >Route 3 &bull; GO Secretion MCP</span
+            >
+            <span class="route-badge">Liquid Biopsy</span>
+          </div>
+          <div class="route-desc-box">
+            <div class="desc-item">
+              <span class="desc-label">🎯 Question Scope (Q/A Intent):</span>
+              <p class="desc-text">
+                Liquid biopsy feasibility, non-invasive biomarker detection,
+                extracellular space shed proteins, exosome vesicle cargo, and
+                plasma diagnostic profiling.
+              </p>
+            </div>
+            <div class="desc-item">
+              <span class="desc-label">⚙️ What the Agent Does:</span>
+              <p class="desc-text">
+                Queries Gene Ontology QuickGO API for cellular components
+                (GO:0005576 extracellular space, GO:0070062 exosome) and scores
+                secretome suitability for blood-based diagnostic assays.
+              </p>
+            </div>
+          </div>
+          <div class="route-examples-list">
+            <span class="examples-header-label"
+              >Hypothesis Templates (Click to apply):</span
+            >
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Which candidate biomarkers are secreted proteins or shed into
+                extracellular vesicles suitable for liquid biopsy blood tests?
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Evaluate the cellular secretion and extracellular space
+                localization of top differentially expressed genes for
+                non-invasive diagnostics.
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Are the leading cancer-specific platelet markers detectable in
+                blood plasma or circulating microvesicles?
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Clinical Survival / Prognosis Route -->
+        <div class="route-card-full" data-route="clinical_survival">
+          <div class="route-card-header">
+            <span class="route-tag survival-tag"
+              >Route 4 &bull; Clinical Survival MCP</span
+            >
+            <span class="route-badge">Prognosis & Hazard</span>
+          </div>
+          <div class="route-desc-box">
+            <div class="desc-item">
+              <span class="desc-label">🎯 Question Scope (Q/A Intent):</span>
+              <p class="desc-text">
+                Prognostic biomarker validation, overall survival (OS) outcomes,
+                recurrence-free survival, Kaplan-Meier curves, and patient risk
+                stratification.
+              </p>
+            </div>
+            <div class="desc-item">
+              <span class="desc-label">⚙️ What the Agent Does:</span>
+              <p class="desc-text">
+                Queries TCGA Pan-Cancer Clinical Atlas cohorts, computes
+                log-rank Kaplan-Meier p-values and Cox proportional hazard
+                ratios, stratifying patients into high vs low risk.
+              </p>
+            </div>
+          </div>
+          <div class="route-examples-list">
+            <span class="examples-header-label"
+              >Hypothesis Templates (Click to apply):</span
+            >
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Do these differentially expressed genes correlate with overall
+                survival outcomes and patient prognosis in TCGA cohorts?
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Assess the prognostic hazard ratio and survival risk associated
+                with elevated expression of candidate genes.
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Which identified gene markers stratify high-risk versus low-risk
+                clinical cohorts and predict recurrence-free survival?
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Standard Pathway / Novelty Route -->
+        <div class="route-card-full" data-route="standard_pathway">
+          <div class="route-card-header">
+            <span class="route-tag standard-tag"
+              >Route 5 &bull; Reactome & PubMed MCP</span
+            >
+            <span class="route-badge">Signaling & Novelty</span>
+          </div>
+          <div class="route-desc-box">
+            <div class="desc-item">
+              <span class="desc-label">🎯 Question Scope (Q/A Intent):</span>
+              <p class="desc-text">
+                Biological pathway cascades, signaling perturbations,
+                statistical overrepresentation (FDR), literature evidence
+                cross-checking, and candidate biomarker novelty.
+              </p>
+            </div>
+            <div class="desc-item">
+              <span class="desc-label">⚙️ What the Agent Does:</span>
+              <p class="desc-text">
+                Performs pathway enrichment via Reactome Analysis Service,
+                queries PubMed and Europe PMC APIs for disease co-citations, and
+                categorizes genes into confirmed vs novel markers.
+              </p>
+            </div>
+          </div>
+          <div class="route-examples-list">
+            <span class="examples-header-label"
+              >Hypothesis Templates (Click to apply):</span
+            >
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                What biological pathways are significantly perturbed and which
+                top genes represent novel uncharacterized biomarkers?
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Perform Reactome signaling pathway enrichment and cross-check
+                PubMed literature for documented disease associations.
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+            <div class="example-card" onclick="applyExample(this)">
+              <div class="example-text">
+                Investigate pathway cascades and verify whether our top
+                candidate biomarkers have prior published literature evidence.
+              </div>
+              <div class="example-card-actions">
+                <button
+                  type="button"
+                  class="example-btn copy-btn"
+                  onclick="copyExampleText(event, this)"
+                >
+                  Copy
+                </button>
+                <button type="button" class="example-btn use-btn">
+                  Use Prompt
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

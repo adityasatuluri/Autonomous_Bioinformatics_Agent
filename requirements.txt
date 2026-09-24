@@ -1,0 +1,10 @@
+Flask>=3.0.0
+python-dotenv>=1.0.0
+flask-cors>=4.0.0
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+langchain>=0.0.330
+groq>=0.4.2
+pytest>=7.4.2
+SQLAlchemy>=2.0.21

@@ -20,11 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const groupB = document.getElementById("group-b");
   const question = document.getElementById("question");
 
-  if (groupA) groupA.addEventListener("change", validateForm);
-  if (groupB) groupB.addEventListener("change", validateForm);
+  if (groupA) groupA.addEventListener("change", () => validateForm(false));
+  if (groupB) groupB.addEventListener("change", () => validateForm(false));
   if (question) {
-    question.addEventListener("input", validateForm);
-    question.addEventListener("blur", validateForm);
+    question.addEventListener("input", () => validateForm(true));
+    question.addEventListener("blur", () => validateForm(true));
   }
 
   // Right-most header sidebar toggle button
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Real-time Form Validation
-function validateForm() {
+function validateForm(showQuestionError = true) {
   const groupASelect = document.getElementById("group-a");
   const groupBSelect = document.getElementById("group-b");
   const questionTextarea = document.getElementById("question");
@@ -70,10 +70,12 @@ function validateForm() {
   const qLen = question.length;
 
   let isValid = true;
+  let groupsLoaded = true;
 
   // 1. Group Validation
   if (!groupA || !groupB || groupA === "Loading..." || groupB === "Loading...") {
     isValid = false;
+    groupsLoaded = false;
   } else if (groupA.toLowerCase() === groupB.toLowerCase()) {
     if (groupMsg) {
       groupMsg.textContent = "Comparison cohorts must be distinct. Group A and Group B cannot be identical.";
@@ -105,18 +107,22 @@ function validateForm() {
 
   // 3. Question Validation
   if (qLen === 0) {
-    if (questionMsg) {
-      questionMsg.textContent = "Research question cannot be empty.";
-      questionMsg.style.display = "flex";
+    if (showQuestionError) {
+      if (questionMsg) {
+        questionMsg.textContent = "Research question cannot be empty.";
+        questionMsg.style.display = "flex";
+      }
+      questionTextarea.classList.add("input-invalid");
     }
-    questionTextarea.classList.add("input-invalid");
     isValid = false;
   } else if (qLen < 5) {
-    if (questionMsg) {
-      questionMsg.textContent = "Research question must be at least 5 characters long.";
-      questionMsg.style.display = "flex";
+    if (showQuestionError) {
+      if (questionMsg) {
+        questionMsg.textContent = "Research question must be at least 5 characters long.";
+        questionMsg.style.display = "flex";
+      }
+      questionTextarea.classList.add("input-invalid");
     }
-    questionTextarea.classList.add("input-invalid");
     isValid = false;
   } else if (qLen > 2000) {
     if (questionMsg) {
@@ -138,9 +144,9 @@ function validateForm() {
     generalAlert.style.display = "none";
   }
 
-  // Update button state (unless pipeline is currently submitting/running)
+  // Enable Run button once groups are loaded (unless pipeline is currently submitting/running)
   if (runBtn && !runBtn.textContent.includes("Submitting") && !runBtn.textContent.includes("Running")) {
-    runBtn.disabled = !isValid;
+    runBtn.disabled = !groupsLoaded;
   }
 
   return isValid;
@@ -184,7 +190,7 @@ async function populateGroups() {
         groupB.disabled = false;
         document.getElementById("question").disabled = false;
         document.getElementById("dataset").disabled = false;
-        validateForm();
+        validateForm(false);
       }
     }
   } catch (error) {
@@ -668,16 +674,29 @@ window.applyExample = function (cardEl) {
     }, 1200);
     textarea.scrollIntoView({ behavior: "smooth", block: "center" });
   }
-  const runBtn = document.getElementById("run-btn");
-  if (runBtn) {
-    runBtn.disabled = false;
-  }
+  validateForm(false);
 
   // Smoothly close drawer after user applies a template
   // NOTE: Flowchart is NOT previewed or pre-highlighted; the agent determines it during live pipeline execution!
   setTimeout(() => {
     closeRoutesSidebar();
   }, 180);
+};
+
+window.copyExampleText = function (event, btnEl) {
+  event.stopPropagation();
+  const cardEl = btnEl.closest(".example-card");
+  if (!cardEl) return;
+  const textEl = cardEl.querySelector(".example-text");
+  if (!textEl) return;
+  const qText = textEl.textContent.trim();
+  navigator.clipboard.writeText(qText).then(() => {
+    const orig = btnEl.textContent;
+    btnEl.textContent = "Copied!";
+    setTimeout(() => {
+      btnEl.textContent = orig;
+    }, 1200);
+  });
 };
 
 window.resetArchitectureGraph = function () {

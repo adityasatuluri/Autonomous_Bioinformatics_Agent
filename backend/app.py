@@ -1,8 +1,15 @@
 import os
+import mimetypes
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from configs.settings import config_by_name
 from backend.services.db_init import init_db
+
+# Ensure correct MIME types on Windows where the registry often maps .js to text/plain,
+# which would otherwise cause browsers to block app.js when X-Content-Type-Options: nosniff is set.
+mimetypes.add_type('application/javascript', '.js')
+mimetypes.add_type('text/css', '.css')
+mimetypes.add_type('image/svg+xml', '.svg')
 
 def create_app(config_name='default'):
     app = Flask(__name__, static_folder='../frontend')
@@ -24,6 +31,7 @@ def create_app(config_name='default'):
         response.headers['X-Frame-Options'] = 'SAMEORIGIN'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Cache-Control'] = 'no-cache, must-revalidate'
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
@@ -72,6 +80,9 @@ def create_app(config_name='default'):
     def serve_frontend(path):
         static_dir = os.path.abspath(app.static_folder)
         if path != "":
+            if path == "favicon.ico" and not os.path.isfile(os.path.join(static_dir, "favicon.ico")):
+                return ("", 204)
+
             # Reject dotfiles or hidden files
             parts = path.replace('\\', '/').split('/')
             if any(part.startswith('.') for part in parts if part):
@@ -80,9 +91,9 @@ def create_app(config_name='default'):
             target_path = os.path.abspath(os.path.join(static_dir, path))
             # Verify target path is strictly within static_dir to prevent path traversal
             if os.path.commonpath([static_dir, target_path]) == static_dir and os.path.isfile(target_path):
-                return send_from_directory(static_dir, path)
+                return send_from_directory(static_dir, path, max_age=0)
 
-        return send_from_directory(static_dir, 'index.html')
+        return send_from_directory(static_dir, 'index.html', max_age=0)
 
     return app
 
